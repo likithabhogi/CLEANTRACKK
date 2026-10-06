@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Login &amp; Register | CleanTrack AI{% endblock %}
+
+{% block layout %}
+  <!-- Top Navigation Bar -->
+  <header class="site-navbar">
+    <div class="container nav-container">
+      <a href="{{ url_for('home_page') }}" class="brand-logo">
+        <div class="brand-icon">
+          <i class="fa-solid fa-leaf"></i>
+        </div>
+        <div class="brand-name">CleanTrack <span>AI</span></div>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="{{ url_for('home_page') }}" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Back to Home</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <div class="auth-page-wrapper">
+    <div class="auth-container">
+      <div class="auth-header">
+        <div class="brand-logo" style="justify-content: center; margin-bottom: 0.75rem;">
+          <div class="brand-icon">
+            <i class="fa-solid fa-leaf"></i>
+          </div>
+          <div class="brand-name">CleanTrack <span>AI</span></div>
+        </div>
+        <h2 id="authTitle" style="font-size: 1.45rem;">Welcome Back to CleanTrack AI</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
+          Enter your credentials to access your smart waste management portal.
+        </p>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="loginTab">Sign In</div>
+        <div class="auth-tab" id="registerTab">Create Account</div>
+      </div>
+
+      <div class="auth-body">
+        <!-- ================= LOGIN FORM ================= -->
+        <div id="loginFormSection">
+          <form id="loginForm">
+            <div class="form-group">
+              <label class="form-label" for="loginEmail">Email Address</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="loginEmail" class="form-control" placeholder="name@example.com" required autocomplete="username">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.4rem;">
+                <label class="form-label" for="loginPassword" style="margin-bottom: 0;">Password</label>
+                <a href="#" style="font-size: 0.8rem; color: var(--primary-dark);" onclick="showToast('Demo Mode: Use Citizen123! or Admin123! to log in.', 'info', 4000); return false;">Forgot Password?</a>
+              </div>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="loginPassword" class="form-control has-toggle" placeholder="Enter your password" required autocomplete="current-password">
+                <i class="fa-solid fa-eye toggle-pw" data-target="loginPassword" title="Show/Hide password"></i>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; color: var(--text-body); cursor: pointer;">
+                <input type="checkbox" id="rememberMe" style="accent-color: var(--primary);">
+                <span>Remember me on this device</span>
+              </label>
+            </div>
+
+            <button type="submit" id="loginSubmitBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem;">
+              <i class="fa-solid fa-right-to-bracket"></i> Sign In
+            </button>
+          </form>
+
+          <p style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+            Don't have an account yet? <a href="#" id="toRegisterLink" style="font-weight: 600; color: var(--primary-dark);">Create an account</a>
+          </p>
+
+          <!-- Demo Credentials Helper Box -->
+          <div class="auth-demo-box">
+            <p><i class="fa-solid fa-key" style="color: var(--primary);"></i> One-Click Demo Credentials (Test Access):</p>
+            <div class="demo-buttons-row">
+              <button type="button" class="btn btn-outline btn-sm" onclick="fillDemo('citizen')" style="flex: 1;">
+                <i class="fa-solid fa-user"></i> Citizen Demo
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="fillDemo('admin')" style="flex: 1;">
+                <i class="fa-solid fa-user-shield"></i> Admin Demo
+              </button>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.5rem; line-height: 1.4;">
+              Citizen: <code>citizen@cleantrack.ai</code> / <code>Citizen123!</code><br>
+              Admin: <code>admin@cleantrack.ai</code> / <code>Admin123!</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= REGISTRATION FORM ================= -->
+        <div id="registerFormSection" style="display: none;">
+          <form id="registerForm">
+            <div class="form-group">
+              <label class="form-label" for="regName">Full Name</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="regName" class="form-control" placeholder="e.g. Priya Sharma" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regEmail">Email Address</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="regEmail" class="form-control" placeholder="name@example.com" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regPhone">Mobile Number (Optional)</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-phone"></i>
+                <input type="tel" id="regPhone" class="form-control" placeholder="+91 98765 43210">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Select Account Role</label>
+              <div class="role-selector-group">
+                <label class="role-radio-card selected">
+                  <input type="radio" name="regRole" value="citizen" checked>
+                  <div>
+                    <strong style="display: block; font-size: 0.88rem; color: var(--text-main);">Citizen</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Report &amp; track waste</span>
+                  </div>
+                </label>
+                <label class="role-radio-card">
+                  <input type="radio" name="regRole" value="admin">
+                  <div>
+                    <strong style="display: block; font-size: 0.88rem; color: var(--text-main);">Administrator</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Manage squads &amp; triage</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regPassword">Password</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="regPassword" class="form-control has-toggle" placeholder="Minimum 6 characters" required autocomplete="new-password">
+                <i class="fa-solid fa-eye toggle-pw" data-target="regPassword" title="Show/Hide password"></i>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regConfirmPassword">Confirm Password</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="regConfirmPassword" class="form-control has-toggle" placeholder="Re-enter your password" required autocomplete="new-password">
+                <i class="fa-solid fa-eye toggle-pw" data-target="regConfirmPassword" title="Show/Hide password"></i>
+              </div>
+            </div>
+
+            <button type="submit" id="registerSubmitBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; margin-top: 1rem;">
+              <i class="fa-solid fa-user-plus"></i> Create Account
+            </button>
+          </form>
+
+          <p style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+            Already have an account? <a href="#" id="toLoginLink" style="font-weight: 600; color: var(--primary-dark);">Sign in here</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

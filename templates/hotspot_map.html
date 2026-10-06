@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Garbage Hotspot Map | CleanTrack AI{% endblock %}
+
+{% block extra_head %}
+<style>
+  .legend-card {
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    font-size: 0.8rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+</style>
+{% endblock %}
+
+{% block layout %}
+<div class="dashboard-layout">
+  <!-- Admin Sidebar -->
+  <aside class="sidebar" id="dashboardSidebar">
+    <div class="sidebar-header">
+      <a href="{{ url_for('home_page') }}" class="sidebar-brand">
+        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="brand-name">CleanTrack <span style="color: #0284c7;">Admin</span></div>
+      </a>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="sidebar-label">Municipal Control</li>
+      <li>
+        <a href="{{ url_for('admin_dashboard_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Admin Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('manage_reports_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Manage Reports</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('hotspot_map_page') }}" class="sidebar-link active">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>Hotspot Map</span>
+        </a>
+      </li>
+
+      <li class="sidebar-label" style="margin-top: 1rem;">Navigation</li>
+      <li>
+        <a href="{{ url_for('home_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-house"></i>
+          <span>Home Page</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('logout_route') }}" class="sidebar-link" style="color: var(--status-urgent);">
+          <i class="fa-solid fa-right-from-bracket" style="color: var(--status-urgent);"></i>
+          <span>Logout</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="user-profile-badge">
+        <div class="avatar-initials" style="background-color: #0284c7;">
+          A
+        </div>
+        <div class="user-meta">
+          <div class="user-name">{{ current_user.name if current_user else 'Chief Administrator' }}</div>
+          <div class="user-role" style="color: #0284c7; font-weight: 600;">Municipal Officer</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="dashboard-header">
+      <div class="header-left">
+        <button class="menu-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-title">
+          Garbage Hotspot Monitoring
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="{{ url_for('manage_reports_page') }}" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-sliders"></i> Go to Triage List
+        </a>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <!-- Hotspot Layout Grid (Map + Side Panel) -->
+      <div class="hotspot-dashboard-grid">
+        
+        <!-- Center / Left: Interactive Map -->
+        <div class="hotspot-map-wrapper">
+          
+          <!-- Map Filter Bar -->
+          <div class="map-filter-bar">
+            <!-- Category Filter -->
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <label for="filterCategory" style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Category:</label>
+              <select id="filterCategory" class="form-control" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; width: auto;">
+                <option value="all">All Categories</option>
+                <option value="Plastic">Plastic</option>
+                <option value="Organic">Organic</option>
+                <option value="Mixed Waste">Mixed Waste</option>
+                <option value="Metal/Glass">Metal/Glass</option>
+                <option value="Paper/Cardboard">Paper/Cardboard</option>
+              </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <label for="filterStatus" style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Status:</label>
+              <select id="filterStatus" class="form-control" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; width: auto;">
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="assigned">Assigned</option>
+                <option value="in progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+
+            <!-- Priority Filter -->
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <label for="filterPriority" style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Priority:</label>
+              <select id="filterPriority" class="form-control" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; width: auto;">
+                <option value="all">All Priorities</option>
+                <option value="Urgent">Urgent</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+
+            <!-- DBSCAN Clustering Radius (Epsilon) -->
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <label for="filterEps" style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);" title="Scikit-Learn DBSCAN neighborhood search distance">Cluster Radius:</label>
+              <select id="filterEps" class="form-control" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; width: auto;">
+                <option value="400">400 meters (Tight)</option>
+                <option value="700" selected>700 meters (Standard)</option>
+                <option value="1200">1200 meters (Wide)</option>
+              </select>
+            </div>
+
+            <button type="button" id="resetMapFiltersBtn" class="btn btn-secondary btn-sm" style="margin-left: auto;">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+
+          <!-- Loading Indicator -->
+          <div id="mapLoader" style="display: none; padding: 0.5rem 1rem; background-color: #ecfdf5; color: #047857; font-size: 0.82rem; text-align: center;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Executing Scikit-Learn DBSCAN spatial clustering...
+          </div>
+
+          <!-- Leaflet Map Container -->
+          <div class="map-canvas-full" id="hotspotMapCanvas"></div>
+
+          <!-- Attribution & Note -->
+          <div style="padding: 0.5rem 1rem; background-color: #ffffff; border-top: 1px solid var(--border-light); font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+            <span><i class="fa-solid fa-circle-info"></i> DBSCAN clustering groups nearby coordinates (eps radius) to isolate chronic accumulation hubs.</span>
+            <span>Simulated Pilot Geospatial Data</span>
+          </div>
+
+        </div>
+
+        <!-- Right Side Panel: Hotspot Summaries & Detected Clusters List -->
+        <div class="hotspot-sidebar">
+          
+          <!-- Summary Metrics Cards -->
+          <div class="content-card" style="padding: 1.25rem; margin-bottom: 0;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 1rem; color: var(--text-main);">
+              <i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i> Hotspot Spatial Summary
+            </h4>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div style="background-color: var(--bg-card-secondary); padding: 0.75rem; border-radius: var(--radius-md);">
+                <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a;" id="summaryTotal">0</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Reports in Area</div>
+              </div>
+              <div style="background-color: #ecfdf5; padding: 0.75rem; border-radius: var(--radius-md);">
+                <div style="font-size: 1.35rem; font-weight: 800; color: #047857;" id="summaryClusters">0</div>
+                <div style="font-size: 0.72rem; color: #065f46;">Dense Clusters</div>
+              </div>
+              <div style="background-color: #fef3c7; padding: 0.75rem; border-radius: var(--radius-md);">
+                <div style="font-size: 1.35rem; font-weight: 800; color: #b45309;" id="summaryAwaiting">0</div>
+                <div style="font-size: 0.72rem; color: #78350f;">Awaiting Action</div>
+              </div>
+              <div style="background-color: #fee2e2; padding: 0.75rem; border-radius: var(--radius-md);">
+                <div style="font-size: 1.35rem; font-weight: 800; color: #b91c1c;" id="summaryHighPriority">0</div>
+                <div style="font-size: 0.72rem; color: #7f1d1d;">Urgent / High</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detected Clusters List -->
+          <div class="content-card" style="padding: 1.25rem; margin-bottom: 0; flex: 1; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem;">
+              <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0;">
+                <i class="fa-solid fa-circle-nodes" style="color: #0284c7;"></i> Detected Hotspots
+              </h4>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Click to Zoom</span>
+            </div>
+
+            <div id="detectedClustersList" style="overflow-y: auto; max-height: 280px;">
+              <!-- Populated dynamically by hotspot_map.js -->
+            </div>
+          </div>
+
+          <!-- Map Legend Card -->
+          <div class="legend-card">
+            <strong style="display: block; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-main);">
+              <i class="fa-solid fa-map"></i> Map Legend
+            </strong>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #ef4444;"></div>
+              <span><strong>Red Marker / Ring:</strong> Urgent / Critical Density</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #f59e0b;"></div>
+              <span><strong>Amber Marker / Ring:</strong> Moderate Density / Medium</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #10b981;"></div>
+              <span><strong>Green Marker / Ring:</strong> Resolved or Low Hazard</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #64748b;"></div>
+              <span><strong>Grey Pin:</strong> Isolated Report (DBSCAN Noise)</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/hotspot_map.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Dashboard | CleanTrack AI{% endblock %}
+
+{% block layout %}
+<div class="dashboard-layout">
+  <!-- Admin Sidebar -->
+  <aside class="sidebar" id="dashboardSidebar">
+    <div class="sidebar-header">
+      <a href="{{ url_for('home_page') }}" class="sidebar-brand">
+        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="brand-name">CleanTrack <span style="color: #0284c7;">Admin</span></div>
+      </a>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="sidebar-label">Municipal Control</li>
+      <li>
+        <a href="{{ url_for('admin_dashboard_page') }}" class="sidebar-link active">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Admin Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('manage_reports_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Manage Reports</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('hotspot_map_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>Hotspot Map</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="sidebar-link" onclick="openModal('cleanupTeamsModal'); return false;">
+          <i class="fa-solid fa-truck-pickup"></i>
+          <span>Cleanup Teams</span>
+        </a>
+      </li>
+      <li>
+        <a href="#chartsSection" class="sidebar-link">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Analytics</span>
+        </a>
+      </li>
+
+      <li class="sidebar-label" style="margin-top: 1rem;">Admin Controls</li>
+      <li>
+        <a href="#" class="sidebar-link" onclick="openModal('adminProfileModal'); return false;">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Admin Profile</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('logout_route') }}" class="sidebar-link" style="color: var(--status-urgent);">
+          <i class="fa-solid fa-right-from-bracket" style="color: var(--status-urgent);"></i>
+          <span>Logout</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="user-profile-badge">
+        <div class="avatar-initials" style="background-color: #0284c7;">
+          A
+        </div>
+        <div class="user-meta">
+          <div class="user-name">{{ current_user.name if current_user else 'Chief Administrator' }}</div>
+          <div class="user-role" style="color: #0284c7; font-weight: 600;">Municipal Officer</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="header-left">
+        <button class="menu-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-title">
+          Administrator Dashboard
+        </div>
+      </div>
+
+      <div class="header-right">
+        <a href="{{ url_for('hotspot_map_page') }}" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-map-location-dot"></i> Hotspot Map
+        </a>
+        <a href="{{ url_for('manage_reports_page') }}" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-sliders"></i> Triage Reports
+        </a>
+        <button class="notification-btn" onclick="showToast('Municipal dispatch channels operating normally.', 'info', 3000);" title="System Alert">
+          <i class="fa-regular fa-bell"></i>
+          <span class="notification-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <!-- Loading Indicator -->
+      <div id="adminDashboardLoading" style="display: none; text-align: center; padding: 2rem;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: #0284c7;"></i>
+        <p style="margin-top: 0.5rem; color: var(--text-muted);">Syncing live municipal report metrics...</p>
+      </div>
+
+      <!-- 5 Summary KPI Cards -->
+      <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));">
+        <!-- Total Reports -->
+        <div class="metric-card">
+          <div class="metric-icon-box green">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="adminKpiTotal">0</div>
+            <div class="metric-label">Total Reports</div>
+          </div>
+        </div>
+
+        <!-- Pending Reports -->
+        <div class="metric-card">
+          <div class="metric-icon-box amber">
+            <i class="fa-solid fa-hourglass-start"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="adminKpiPending">0</div>
+            <div class="metric-label">Pending Review</div>
+          </div>
+        </div>
+
+        <!-- High Priority Reports -->
+        <div class="metric-card">
+          <div class="metric-icon-box red">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="adminKpiHighPriority">0</div>
+            <div class="metric-label">High Priority</div>
+          </div>
+        </div>
+
+        <!-- Reports In Progress -->
+        <div class="metric-card">
+          <div class="metric-icon-box blue">
+            <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="adminKpiInProgress">0</div>
+            <div class="metric-label">In Progress</div>
+          </div>
+        </div>
+
+        <!-- Resolved Reports -->
+        <div class="metric-card">
+          <div class="metric-icon-box green">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="adminKpiResolved">0</div>
+            <div class="metric-label">Resolved</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Navigation Banner -->
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: var(--radius-lg); padding: 1.5rem 2rem; color: #ffffff; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; box-shadow: var(--shadow-md);">
+        <div>
+          <h3 style="color: #ffffff; margin-bottom: 0.25rem;">
+            <i class="fa-solid fa-satellite-dish" style="color: #38bdf8;"></i> Geospatial Hotspot Monitoring Active
+          </h3>
+          <p style="color: #94a3b8; font-size: 0.92rem; margin: 0;">
+            Scikit-Learn DBSCAN algorithm is clustering incoming civic reports to detect chronic garbage buildup zones across municipal wards.
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <a href="{{ url_for('hotspot_map_page') }}" class="btn btn-primary">
+            <i class="fa-solid fa-map-location-dot"></i> View Hotspot Map
+          </a>
+          <a href="{{ url_for('manage_reports_page') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-list-check"></i> Review All Reports
+          </a>
+        </div>
+      </div>
+
+      <!-- Charts Section (3 Chart.js Visualizations) -->
+      <div id="chartsSection" style="margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+          <!-- Chart 1: Line Chart (Reports Over Time) -->
+          <div class="content-card" style="margin-bottom: 0;">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-chart-line" style="color: var(--primary);"></i>
+                <span>Complaints Trend Over Time</span>
+              </div>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Real-Time Data</span>
+            </div>
+            <div style="height: 250px; position: relative;">
+              <canvas id="trendLineChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Doughnut Chart (Reports by Category) -->
+          <div class="content-card" style="margin-bottom: 0;">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-chart-pie" style="color: #0284c7;"></i>
+                <span>Reports by Category</span>
+              </div>
+            </div>
+            <div style="height: 250px; position: relative;">
+              <canvas id="categoryDoughnutChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 3: Bar Chart (Reports by Status) -->
+        <div class="content-card" style="margin-bottom: 2rem;">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-chart-column" style="color: #f59e0b;"></i>
+              <span>Report Counts by Operational Status</span>
+            </div>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">SLA Pipeline Distribution</span>
+          </div>
+          <div style="height: 220px; position: relative;">
+            <canvas id="statusBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Reports Table & Activity Feed -->
+      <div style="display: grid; grid-template-columns: 2.2fr 1fr; gap: 2rem;" class="dashboard-main-grid">
+        <!-- Recent Reports Table -->
+        <div class="content-card" style="margin-bottom: 0;">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-list" style="color: var(--primary);"></i>
+              <span>Recent Incident Reports</span>
+            </div>
+            <a href="{{ url_for('manage_reports_page') }}" class="btn btn-outline btn-sm">
+              Open Full Manager <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Complaint ID</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Priority</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminRecentReportsBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Audit Log / Dispatch Feed -->
+        <div class="content-card" style="margin-bottom: 0;">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-tower-broadcast" style="color: #0284c7;"></i>
+              <span>Live Dispatch Feed</span>
+            </div>
+          </div>
+          <div id="adminActivityFeed">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Cleanup Teams -->
+<div class="modal-backdrop" id="cleanupTeamsModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem;"><i class="fa-solid fa-truck-pickup" style="color: #0284c7;"></i> Active Municipal Cleanup Teams</h3>
+      <button style="background:none; border:none; font-size:1.2rem; cursor:pointer;" onclick="closeModal('cleanupTeamsModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Sanitation squads registered in the municipality for dispatch:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="padding: 0.85rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>Ward 4 Rapid Response Unit</strong>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">Lead: Vikram Singh | Ph: +91 98221 00111</div>
+          </div>
+          <span class="badge badge-resolved">Available</span>
+        </div>
+        <div style="padding: 0.85rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>EcoClean Green Crew</strong>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">Lead: Anita Patel | Ward 2 - Koramangala</div>
+          </div>
+          <span class="badge badge-progress">Dispatched</span>
+        </div>
+        <div style="padding: 0.85rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>Central Municipal Cleaners #3</strong>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">Lead: David D'Souza | Ward 7 - MG Road</div>
+          </div>
+          <span class="badge badge-resolved">Available</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('cleanupTeamsModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Admin Profile -->
+<div class="modal-backdrop" id="adminProfileModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem;"><i class="fa-solid fa-user-shield"></i> Officer Credentials</h3>
+      <button style="background:none; border:none; font-size:1.2rem; cursor:pointer;" onclick="closeModal('adminProfileModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="avatar-initials" style="width: 54px; height: 54px; font-size: 1.4rem; background-color: #0284c7;">
+          A
+        </div>
+        <div>
+          <h4 style="margin: 0;">{{ current_user.name if current_user else 'Chief Administrator' }}</h4>
+          <span class="badge badge-assigned" style="margin-top: 0.25rem;">Municipal Sanitation Director</span>
+        </div>
+      </div>
+      <div style="background-color: var(--bg-card-secondary); padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem;">
+        <div style="margin-bottom: 0.5rem;"><strong>Email:</strong> {{ current_user.email if current_user else 'admin@cleantrack.ai' }}</div>
+        <div><strong>Access Level:</strong> Full Administrative Privileges (Triage, Map &amp; Squad Assignment)</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('adminProfileModal')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+{% endblock %}

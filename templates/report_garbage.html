@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Report Garbage | CleanTrack AI{% endblock %}
+
+{% block layout %}
+<div class="dashboard-layout">
+  <!-- Citizen Sidebar -->
+  <aside class="sidebar" id="dashboardSidebar">
+    <div class="sidebar-header">
+      <a href="{{ url_for('home_page') }}" class="sidebar-brand">
+        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem;">
+          <i class="fa-solid fa-leaf"></i>
+        </div>
+        <div class="brand-name">CleanTrack <span>AI</span></div>
+      </a>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="sidebar-label">Citizen Services</li>
+      <li>
+        <a href="{{ url_for('citizen_dashboard_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-table-columns"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('report_garbage_page') }}" class="sidebar-link active">
+          <i class="fa-solid fa-camera"></i>
+          <span>Report Garbage</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('my_reports_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-list-check"></i>
+          <span>My Reports</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('my_reports_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-magnifying-glass-location"></i>
+          <span>Track Complaints</span>
+        </a>
+      </li>
+
+      <li class="sidebar-label" style="margin-top: 1rem;">Navigation</li>
+      <li>
+        <a href="{{ url_for('home_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-house"></i>
+          <span>Home Page</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('logout_route') }}" class="sidebar-link" style="color: var(--status-urgent);">
+          <i class="fa-solid fa-right-from-bracket" style="color: var(--status-urgent);"></i>
+          <span>Logout</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="user-profile-badge">
+        <div class="avatar-initials">
+          {{ current_user.name[0] if current_user else 'C' }}
+        </div>
+        <div class="user-meta">
+          <div class="user-name">{{ current_user.name if current_user else 'Citizen' }}</div>
+          <div class="user-role">Citizen Account</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Header -->
+    <header class="dashboard-header">
+      <div class="header-left">
+        <button class="menu-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-title">
+          Report Street Garbage
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="{{ url_for('my_reports_page') }}" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-list"></i> My Previous Reports
+        </a>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <div class="report-form-container">
+        
+        <!-- Instruction Banner -->
+        <div class="content-card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-left: 4px solid var(--primary);">
+          <h2 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: var(--text-main);">
+            <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> How to Report Waste
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 0;">
+            1. Snap or upload a clear photo of the discarded garbage. <br>
+            2. CleanTrack AI will automatically analyze the image and classify the waste type. <br>
+            3. Pinpoint the exact location on the map or click <em>Use My Current Location</em>. <br>
+            4. Submit your report. You will receive an official complaint tracking ID immediately.
+          </p>
+        </div>
+
+        <!-- Submission Form Card -->
+        <div class="content-card">
+          <form id="reportGarbageForm" enctype="multipart/form-data">
+            
+            <!-- Hidden inputs for AI model results -->
+            <input type="hidden" id="aiPredictedCategoryInput" name="ai_predicted_category" value="">
+            <input type="hidden" id="aiConfidenceInput" name="ai_confidence" value="0">
+            <input type="hidden" id="reportLat" name="latitude" value="12.971600">
+            <input type="hidden" id="reportLng" name="longitude" value="77.594600">
+
+            <!-- 1. IMAGE UPLOAD SECTION -->
+            <div class="form-group" style="margin-bottom: 1.75rem;">
+              <label class="form-label" style="font-size: 1rem;">
+                <i class="fa-solid fa-camera" style="color: var(--primary);"></i> 1. Waste Image Proof <span style="color: #ef4444;">*</span>
+              </label>
+              
+              <div class="upload-dropzone" id="uploadDropzone">
+                <input type="file" id="reportImageInput" accept="image/jpeg,image/png,image/jpg,image/webp" style="display: none;">
+                <div class="upload-icon">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <h4 style="margin-bottom: 0.25rem;">Drag &amp; Drop photo here, or click to browse</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">
+                  Supports JPG, JPEG, PNG, WEBP (Max: 12MB)
+                </p>
+              </div>
+
+              <!-- Client Image Preview -->
+              <div class="image-preview-container" id="imagePreviewContainer">
+                <img id="imagePreviewImg" class="image-preview-img" alt="Uploaded Preview">
+                <button type="button" class="remove-img-btn" id="removeImgBtn" title="Remove image">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+
+              <!-- AI Waste Classification Results Box -->
+              <div class="ai-detection-card" id="aiDetectionCard">
+                <div id="aiSpinner" style="display: flex; align-items: center; gap: 0.75rem;">
+                  <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 1.25rem; color: #059669;"></i>
+                  <span style="font-size: 0.9rem; font-weight: 600; color: #047857;">CleanTrack AI VisionNet is classifying image features...</span>
+                </div>
+
+                <div id="aiResults" style="display: none;">
+                  <div class="ai-detection-header">
+                    <div class="ai-badge">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> AI Waste Detection
+                    </div>
+                    <span id="aiConfidenceScore" style="font-weight: 700; font-size: 0.85rem; color: #047857;">94.2% Confidence</span>
+                  </div>
+
+                  <div style="font-size: 1.1rem; font-weight: 800; color: #064e3b; margin-bottom: 0.25rem;">
+                    Detected Category: <span id="aiPredictedName" style="color: #047857;">Plastic</span>
+                  </div>
+
+                  <!-- Confidence Progress Bar -->
+                  <div class="confidence-bar-bg">
+                    <div class="confidence-bar-fill" id="aiConfidenceBar" style="width: 90%;"></div>
+                  </div>
+
+                  <p id="aiFeatureDetails" style="font-size: 0.82rem; color: #065f46; margin: 0.4rem 0 0.75rem;">
+                    Dominant visual synthetic polymer signature and high chromatic texture variance detected.
+                  </p>
+
+                  <div style="font-size: 0.75rem; color: #047857; background-color: rgba(255,255,255,0.7); padding: 0.35rem 0.65rem; border-radius: 4px; display: inline-block;">
+                    <i class="fa-solid fa-info-circle"></i> CleanTrack AI Computer Vision (Demo/Heuristic Inference). You can manually confirm or change the category below.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. CATEGORY SELECTION -->
+            <div class="form-group" style="margin-bottom: 1.75rem;">
+              <label class="form-label" for="wasteCategorySelect" style="font-size: 1rem;">
+                <i class="fa-solid fa-tags" style="color: var(--primary);"></i> 2. Waste Category (Confirm or Correct) <span style="color: #ef4444;">*</span>
+              </label>
+              <select id="wasteCategorySelect" name="waste_category" class="form-control" required style="font-weight: 600;">
+                <option value="Plastic">Plastic (Bottles, bags, packaging, containers)</option>
+                <option value="Paper/Cardboard">Paper / Cardboard (Boxes, flyers, packaging)</option>
+                <option value="Organic">Organic (Food scraps, garden waste, rotting vegetation)</option>
+                <option value="Metal/Glass">Metal / Glass (Cans, bottles, metal scrap, sharp fragments)</option>
+                <option value="Mixed Waste" selected>Mixed Waste (General commingled street dump)</option>
+                <option value="Other">Other / Hazardous (Electronic, chemical, bulk debris)</option>
+              </select>
+              <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 0.3rem;">
+                If the AI prediction differs from what you see, please select the most accurate category.
+              </span>
+            </div>
+
+            <!-- 3. LOCATION & INTERACTIVE PINPICKER -->
+            <div class="form-group" style="margin-bottom: 1.75rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
+                <label class="form-label" style="font-size: 1rem; margin-bottom: 0;">
+                  <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> 3. Report Location <span style="color: #ef4444;">*</span>
+                </label>
+                <button type="button" id="useLocationBtn" class="btn btn-outline btn-sm">
+                  <i class="fa-solid fa-location-crosshairs"></i> Use My Current Location
+                </button>
+              </div>
+
+              <div id="coordDisplay" style="font-size: 0.85rem; font-weight: 600; color: #0284c7; margin-bottom: 0.4rem;">
+                Selected: 12.97160, 77.59460
+              </div>
+
+              <!-- Leaflet Map Canvas -->
+              <div class="map-picker-container" id="reportMap"></div>
+              <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-top: 0.4rem;">
+                Tip: Click anywhere on the map or drag the green pin to adjust the precise garbage location.
+              </span>
+
+              <div style="margin-top: 0.85rem;">
+                <label class="form-label" for="reportAddress">Street Address / Landmark (Optional)</label>
+                <input type="text" id="reportAddress" name="address" class="form-control" placeholder="e.g. Near Indiranagar Metro Pillar 42, Opposite City Hospital">
+              </div>
+            </div>
+
+            <!-- 4. DESCRIPTION -->
+            <div class="form-group" style="margin-bottom: 2rem;">
+              <label class="form-label" for="reportDescription" style="font-size: 1rem;">
+                <i class="fa-solid fa-align-left" style="color: var(--primary);"></i> 4. Description of Waste Problem <span style="color: #ef4444;">*</span>
+              </label>
+              <textarea id="reportDescription" name="description" class="form-control" rows="3" placeholder="Describe the waste situation (e.g. blocking pedestrian sidewalk, foul odor, next to school drain, overflowing bins...)" required></textarea>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; flex-wrap: wrap;">
+              <button type="button" id="resetFormBtn" class="btn btn-secondary">
+                <i class="fa-solid fa-rotate-left"></i> Reset Form
+              </button>
+              <button type="submit" id="submitReportBtn" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-paper-plane"></i> Submit Report
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================= SUCCESS CONFIRMATION MODAL ================= -->
+<div class="modal-backdrop" id="reportSuccessModal">
+  <div class="modal-dialog" style="text-align: center; max-width: 480px;">
+    <div class="modal-body" style="padding: 2.5rem 2rem;">
+      <div style="width: 80px; height: 80px; border-radius: 50%; background-color: var(--primary-light); color: var(--primary-dark); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+        <i class="fa-solid fa-check"></i>
+      </div>
+
+      <h2 style="font-size: 1.6rem; margin-bottom: 0.5rem; color: var(--text-main);">
+        Report Filed Successfully!
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+        Your waste report has been logged and queued for municipal triage and team dispatch.
+      </p>
+
+      <div style="background-color: var(--bg-card-secondary); border: 1px dashed var(--border-light); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.75rem;">
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">
+          Your Complaint Tracking ID
+        </div>
+        <div id="successComplaintId" style="font-size: 1.6rem; font-weight: 800; color: #0284c7; margin-top: 0.25rem;">
+          CT-2026-XXXXX
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <a id="trackComplaintBtn" href="#" class="btn btn-primary" style="padding: 0.85rem;">
+          <i class="fa-solid fa-magnifying-glass-location"></i> Track This Complaint Now
+        </a>
+        <a href="{{ url_for('citizen_dashboard_page') }}" class="btn btn-secondary">
+          <i class="fa-solid fa-table-columns"></i> Return to Citizen Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/report_garbage.js') }}"></script>
+{% endblock %}

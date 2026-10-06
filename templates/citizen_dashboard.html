@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Citizen Dashboard | CleanTrack AI{% endblock %}
+
+{% block layout %}
+<div class="dashboard-layout">
+  <!-- Citizen Sidebar -->
+  <aside class="sidebar" id="dashboardSidebar">
+    <div class="sidebar-header">
+      <a href="{{ url_for('home_page') }}" class="sidebar-brand">
+        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem;">
+          <i class="fa-solid fa-leaf"></i>
+        </div>
+        <div class="brand-name">CleanTrack <span>AI</span></div>
+      </a>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="sidebar-label">Citizen Services</li>
+      <li>
+        <a href="{{ url_for('citizen_dashboard_page') }}" class="sidebar-link active">
+          <i class="fa-solid fa-table-columns"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('report_garbage_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-camera"></i>
+          <span>Report Garbage</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('my_reports_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-list-check"></i>
+          <span>My Reports</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('my_reports_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-magnifying-glass-location"></i>
+          <span>Track Complaints</span>
+        </a>
+      </li>
+
+      <li class="sidebar-label" style="margin-top: 1rem;">Settings</li>
+      <li>
+        <a href="#" class="sidebar-link" onclick="openModal('profileModal'); return false;">
+          <i class="fa-solid fa-user-gear"></i>
+          <span>Profile</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('logout_route') }}" class="sidebar-link" style="color: var(--status-urgent);">
+          <i class="fa-solid fa-right-from-bracket" style="color: var(--status-urgent);"></i>
+          <span>Logout</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="user-profile-badge">
+        <div class="avatar-initials">
+          {{ current_user.name[0] if current_user else 'C' }}
+        </div>
+        <div class="user-meta">
+          <div class="user-name">{{ current_user.name if current_user else 'Citizen' }}</div>
+          <div class="user-role">Citizen Account</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="header-left">
+        <button class="menu-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-title">
+          Welcome, <span style="color: var(--primary-dark);">{{ current_user.name if current_user else 'Citizen' }}</span> 👋
+        </div>
+      </div>
+
+      <div class="header-right">
+        <a href="{{ url_for('report_garbage_page') }}" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-plus"></i> Report New Garbage
+        </a>
+        <button class="notification-btn" onclick="showToast('You have no unread municipal notifications.', 'info', 3000);" title="Notifications">
+          <i class="fa-regular fa-bell"></i>
+          <span class="notification-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Body Content -->
+    <div class="content-body">
+      <!-- Loading Indicator -->
+      <div id="dashboardLoading" style="display: none; text-align: center; padding: 2rem;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+        <p style="margin-top: 0.5rem; color: var(--text-muted);">Fetching your citizen activity...</p>
+      </div>
+
+      <!-- Summary Metric Cards -->
+      <div class="metrics-grid">
+        <!-- Total Reports -->
+        <div class="metric-card">
+          <div class="metric-icon-box green">
+            <i class="fa-solid fa-clipboard-list"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="kpiTotal">0</div>
+            <div class="metric-label">Total Reports Submitted</div>
+          </div>
+        </div>
+
+        <!-- Pending Reports -->
+        <div class="metric-card">
+          <div class="metric-icon-box amber">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="kpiPending">0</div>
+            <div class="metric-label">Pending Review</div>
+          </div>
+        </div>
+
+        <!-- In Progress -->
+        <div class="metric-card">
+          <div class="metric-icon-box blue">
+            <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="kpiInProgress">0</div>
+            <div class="metric-label">Cleanup In Progress</div>
+          </div>
+        </div>
+
+        <!-- Resolved Reports -->
+        <div class="metric-card">
+          <div class="metric-icon-box green">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="metric-data">
+            <div class="metric-value" id="kpiResolved">0</div>
+            <div class="metric-label">Verified Resolved</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Banner -->
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: var(--radius-lg); padding: 1.5rem 2rem; color: #ffffff; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; box-shadow: var(--shadow-md);">
+        <div>
+          <h3 style="color: #ffffff; margin-bottom: 0.25rem;">Spot street garbage in your neighborhood?</h3>
+          <p style="color: #d1fae5; font-size: 0.95rem; margin: 0;">Upload a picture and our vision AI will classify it and notify municipal cleanup squads immediately.</p>
+        </div>
+        <a href="{{ url_for('report_garbage_page') }}" class="btn btn-secondary" style="color: #047857; font-weight: 700;">
+          <i class="fa-solid fa-camera"></i> Report New Garbage
+        </a>
+      </div>
+
+      <!-- Main Dashboard Grid: Recent Reports + Charts & Activity -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;" class="dashboard-main-grid">
+        
+        <!-- Left: Recent Reports Table -->
+        <div class="content-card" style="margin-bottom: 0;">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i>
+              <span>Recent Reports</span>
+            </div>
+            <a href="{{ url_for('my_reports_page') }}" class="btn btn-outline btn-sm">
+              View All Reports <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+
+          <!-- Empty State -->
+          <div id="emptyReportsState" style="display: none; text-align: center; padding: 3rem 1rem;">
+            <div style="width: 70px; height: 70px; border-radius: 50%; background-color: var(--primary-subtle); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 1.75rem;">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <h4>No Waste Reports Filed Yet</h4>
+            <p style="color: var(--text-muted); max-width: 380px; margin: 0.5rem auto 1.5rem; font-size: 0.9rem;">
+              You have not submitted any complaints yet. When you report street garbage, you can track its resolution status here in real time.
+            </p>
+            <a href="{{ url_for('report_garbage_page') }}" class="btn btn-primary">
+              <i class="fa-solid fa-camera"></i> Submit Your First Report
+            </a>
+          </div>
+
+          <!-- Data Table Wrapper -->
+          <div class="table-responsive" id="reportsTableWrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Complaint ID</th>
+                  <th>Waste Category</th>
+                  <th>Reported Date</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="recentReportsTableBody">
+                <!-- Dynamically populated by citizen_dashboard.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Status Chart & Activity Feed -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+          <!-- Status Distribution Chart -->
+          <div class="content-card" style="margin-bottom: 0;">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i>
+                <span>Reports by Status</span>
+              </div>
+            </div>
+            <div style="height: 220px; position: relative;">
+              <canvas id="citizenStatusChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="content-card" style="margin-bottom: 0;">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-bolt" style="color: #f59e0b;"></i>
+                <span>Recent Updates</span>
+              </div>
+            </div>
+            <div id="citizenActivityFeed">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-backdrop" id="profileModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="font-size: 1.15rem;"><i class="fa-solid fa-user-circle"></i> Citizen Profile</h3>
+      <button style="background:none; border:none; font-size:1.2rem; cursor:pointer;" onclick="closeModal('profileModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="avatar-initials" style="width: 54px; height: 54px; font-size: 1.4rem;">
+          {{ current_user.name[0] if current_user else 'C' }}
+        </div>
+        <div>
+          <h4 style="margin: 0;">{{ current_user.name if current_user else 'Citizen User' }}</h4>
+          <span class="badge badge-low" style="margin-top: 0.25rem;">Verified Citizen</span>
+        </div>
+      </div>
+      <div style="background-color: var(--bg-card-secondary); padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem;">
+        <div style="margin-bottom: 0.5rem;"><strong>Email:</strong> {{ current_user.email if current_user else 'N/A' }}</div>
+        <div><strong>Account Role:</strong> Citizen Contributor</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('profileModal')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/citizen_dashboard.js') }}"></script>
+{% endblock %}

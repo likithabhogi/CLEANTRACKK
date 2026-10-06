@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Report Management &amp; Cleanup | CleanTrack AI{% endblock %}
+
+{% block extra_head %}
+<style>
+  .triage-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 768px) {
+    .triage-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block layout %}
+<div class="dashboard-layout">
+  <!-- Admin Sidebar -->
+  <aside class="sidebar" id="dashboardSidebar">
+    <div class="sidebar-header">
+      <a href="{{ url_for('home_page') }}" class="sidebar-brand">
+        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="brand-name">CleanTrack <span style="color: #0284c7;">Admin</span></div>
+      </a>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="sidebar-label">Municipal Control</li>
+      <li>
+        <a href="{{ url_for('admin_dashboard_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Admin Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('manage_reports_page') }}" class="sidebar-link active">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Manage Reports</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('hotspot_map_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>Hotspot Map</span>
+        </a>
+      </li>
+
+      <li class="sidebar-label" style="margin-top: 1rem;">Navigation</li>
+      <li>
+        <a href="{{ url_for('home_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-house"></i>
+          <span>Home Page</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('logout_route') }}" class="sidebar-link" style="color: var(--status-urgent);">
+          <i class="fa-solid fa-right-from-bracket" style="color: var(--status-urgent);"></i>
+          <span>Logout</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="user-profile-badge">
+        <div class="avatar-initials" style="background-color: #0284c7;">
+          A
+        </div>
+        <div class="user-meta">
+          <div class="user-name">{{ current_user.name if current_user else 'Chief Administrator' }}</div>
+          <div class="user-role" style="color: #0284c7; font-weight: 600;">Municipal Officer</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="dashboard-header">
+      <div class="header-left">
+        <button class="menu-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-title">
+          Report Management &amp; Cleanup Dispatch
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="{{ url_for('hotspot_map_page') }}" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-map-location-dot"></i> Hotspot Density Map
+        </a>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <!-- Search & Filters Card -->
+      <div class="content-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          
+          <!-- Search Bar -->
+          <div class="input-with-icon" style="flex: 1.5; min-width: 260px;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="reportSearch" class="form-control" placeholder="Search by Complaint ID or location address...">
+          </div>
+
+          <!-- Status Filter -->
+          <div style="flex: 1; min-width: 140px;">
+            <select id="filterStatus" class="form-control">
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="reviewed">Reviewed</option>
+              <option value="assigned">Assigned</option>
+              <option value="in progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </div>
+
+          <!-- Category Filter -->
+          <div style="flex: 1; min-width: 140px;">
+            <select id="filterCategory" class="form-control">
+              <option value="all">All Categories</option>
+              <option value="Plastic">Plastic</option>
+              <option value="Organic">Organic</option>
+              <option value="Mixed Waste">Mixed Waste</option>
+              <option value="Metal/Glass">Metal/Glass</option>
+              <option value="Paper/Cardboard">Paper/Cardboard</option>
+            </select>
+          </div>
+
+          <!-- Priority Filter -->
+          <div style="flex: 1; min-width: 140px;">
+            <select id="filterPriority" class="form-control">
+              <option value="all">All Priorities</option>
+              <option value="Urgent">Urgent (80-100)</option>
+              <option value="High">High (60-79)</option>
+              <option value="Medium">Medium (40-59)</option>
+              <option value="Low">Low (&lt; 40)</option>
+            </select>
+          </div>
+
+          <!-- Clear Filters -->
+          <button type="button" id="resetFiltersBtn" class="btn btn-secondary btn-sm">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="manageReportsLoader" style="display: none; text-align: center; padding: 2.5rem 0;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: #0284c7;"></i>
+        <p style="margin-top: 0.5rem; color: var(--text-muted);">Retrieving reports database...</p>
+      </div>
+
+      <!-- Master Reports Table -->
+      <div class="content-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Complaint ID</th>
+                <th>Photo</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>AI Classification</th>
+                <th>Priority Score</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="manageReportsTableBody">
+              <!-- Populated dynamically by manage_reports.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ================= REPORT TRIAGE & MANAGEMENT MODAL ================= -->
+<div class="modal-backdrop" id="reportTriageModal">
+  <div class="modal-dialog lg">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <h3 style="font-size: 1.25rem; margin: 0; color: #0f172a;">
+          Triage &amp; Dispatch: <span id="triageComplaintId" style="color: #0284c7;">CT-2026-XXXX</span>
+        </h3>
+      </div>
+      <button style="background:none; border:none; font-size:1.4rem; cursor:pointer; color: #94a3b8;" onclick="closeModal('reportTriageModal')">&times;</button>
+    </div>
+
+    <form id="triageUpdateForm" enctype="multipart/form-data">
+      <div class="modal-body">
+        
+        <div class="triage-grid">
+          
+          <!-- Left Column: Report Details & Visual Proof -->
+          <div>
+            <h4 style="font-size: 0.92rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem;">
+              Incident Information
+            </h4>
+
+            <!-- Original Photo Preview -->
+            <div style="margin-bottom: 1rem;">
+              <img id="triageOriginalImg" src="" alt="Reported Waste" style="width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.3rem;">
+                <i class="fa-solid fa-camera"></i> Original Citizen Uploaded Photo
+              </div>
+            </div>
+
+            <!-- Citizen Info & Description -->
+            <div style="background-color: var(--bg-card-secondary); padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1rem;">
+              <div><strong>Reporter:</strong> <span id="triageReporter">Citizen Name</span></div>
+              <div style="margin-top: 0.25rem;"><strong>Date:</strong> <span id="triageDate">Oct 3, 2026</span></div>
+              <div style="margin-top: 0.25rem;"><strong>Category:</strong> <span id="triageCategory">Plastic</span></div>
+              <div style="margin-top: 0.25rem;"><strong>AI Vision:</strong> <span id="triageAiDetection" style="color: #047857; font-weight: 600;">Plastic (94.6%)</span></div>
+              <div style="margin-top: 0.25rem;"><strong>Location:</strong> <span id="triageAddress">Address</span></div>
+              <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--border-light);">
+                <strong>Citizen Description:</strong>
+                <p id="triageDescription" style="color: var(--text-body); margin: 0.25rem 0 0; font-size: 0.83rem;"></p>
+              </div>
+            </div>
+
+            <!-- Location Mini Map -->
+            <div>
+              <label class="form-label" style="font-size: 0.85rem;">Geographic Coordinates</label>
+              <div id="triageMiniMap" style="height: 160px; border-radius: var(--radius-md); border: 1px solid var(--border-light);"></div>
+            </div>
+          </div>
+
+          <!-- Right Column: Priority Engine & Dispatch Controls -->
+          <div>
+            <!-- Transparent Priority Score Breakdown -->
+            <div class="priority-gauge-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">
+                  <i class="fa-solid fa-gauge-high" style="color: #f59e0b;"></i> Algorithmic Priority Score
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span id="triagePriorityBadgeDisplay"></span>
+                  <span id="triagePriorityScoreDisplay" style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">50</span>/100
+                </div>
+              </div>
+
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                Explainable rule-based scoring calculated from hazard severity, SLA age, and spatial proximity:
+              </div>
+
+              <!-- Factors List -->
+              <ul class="factors-list" id="triageFactorsList">
+                <!-- Dynamically populated factor breakdowns -->
+              </ul>
+            </div>
+
+            <!-- Operational Workflow Controls -->
+            <h4 style="font-size: 0.92rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem;">
+              Sanitation Squad Dispatch &amp; Status
+            </h4>
+
+            <div class="form-group">
+              <label class="form-label" for="triageStatusSelect">Operational Status</label>
+              <select id="triageStatusSelect" name="status" class="form-control" style="font-weight: 600;">
+                <option value="Pending">Pending Review</option>
+                <option value="Reviewed">Reviewed &amp; Verified</option>
+                <option value="Assigned">Assigned to Squad</option>
+                <option value="In Progress">Cleanup In Progress</option>
+                <option value="Resolved">Resolved &amp; Cleared</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="triageTeamSelect">Assign Cleanup Team</label>
+              <select id="triageTeamSelect" name="assigned_team_id" class="form-control">
+                <!-- Populated dynamically from cleanup_teams API -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="triageProofFileInput">
+                <i class="fa-solid fa-camera"></i> Upload After-Cleanup Proof Photo (Verification)
+              </label>
+              <input type="file" id="triageProofFileInput" name="after_image" class="form-control" accept="image/jpeg,image/png,image/jpg,image/webp">
+              <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.25rem;">
+                Sanitation team resolution evidence will be shown to the citizen upon resolution.
+              </span>
+            </div>
+
+            <!-- Current After Photo Preview if already uploaded -->
+            <div style="margin-bottom: 1rem;">
+              <img id="triageAfterImg" src="" alt="Proof Preview" style="width: 100%; height: 110px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-light); display: none;">
+              <div id="triageAfterPlaceholder" style="font-size: 0.78rem; color: var(--text-light); padding: 0.5rem; background-color: var(--bg-card-secondary); border-radius: var(--radius-sm); display: none;">
+                No cleanup verification photo attached yet.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="triageAdminNotes">Official Municipal / Team Instructions</label>
+              <textarea id="triageAdminNotes" name="admin_notes" class="form-control" rows="2" placeholder="e.g. Ward 4 Rapid response unit dispatched with lime powder sanitization."></textarea>
+            </div>
+
+            <!-- History Audit Trail -->
+            <div>
+              <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.3rem;">
+                <i class="fa-solid fa-clock-rotate-left"></i> Audit History
+              </label>
+              <div id="triageAuditHistory" style="max-height: 120px; overflow-y: auto; background-color: var(--bg-card-secondary); padding: 0.65rem; border-radius: var(--radius-md);">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('reportTriageModal')">Cancel</button>
+        <button type="submit" id="triageSaveBtn" class="btn btn-primary">
+          <i class="fa-solid fa-floppy-disk"></i> Save &amp; Dispatch Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/manage_reports.js') }}"></script>
+{% endblock %}

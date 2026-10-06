@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}My Reports &amp; Tracking | CleanTrack AI{% endblock %}
+
+{% block extra_head %}
+<style>
+  .filter-pills-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .filter-pill {
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-full);
+    background-color: #ffffff;
+    border: 1px solid var(--border-light);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-body);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .filter-pill:hover {
+    border-color: var(--primary);
+    color: var(--primary-dark);
+  }
+  .filter-pill.active {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+  }
+</style>
+{% endblock %}
+
+{% block layout %}
+<div class="dashboard-layout">
+  <!-- Citizen Sidebar -->
+  <aside class="sidebar" id="dashboardSidebar">
+    <div class="sidebar-header">
+      <a href="{{ url_for('home_page') }}" class="sidebar-brand">
+        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem;">
+          <i class="fa-solid fa-leaf"></i>
+        </div>
+        <div class="brand-name">CleanTrack <span>AI</span></div>
+      </a>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="sidebar-label">Citizen Services</li>
+      <li>
+        <a href="{{ url_for('citizen_dashboard_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-table-columns"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('report_garbage_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-camera"></i>
+          <span>Report Garbage</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('my_reports_page') }}" class="sidebar-link active">
+          <i class="fa-solid fa-list-check"></i>
+          <span>My Reports</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('my_reports_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-magnifying-glass-location"></i>
+          <span>Track Complaints</span>
+        </a>
+      </li>
+
+      <li class="sidebar-label" style="margin-top: 1rem;">Navigation</li>
+      <li>
+        <a href="{{ url_for('home_page') }}" class="sidebar-link">
+          <i class="fa-solid fa-house"></i>
+          <span>Home Page</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('logout_route') }}" class="sidebar-link" style="color: var(--status-urgent);">
+          <i class="fa-solid fa-right-from-bracket" style="color: var(--status-urgent);"></i>
+          <span>Logout</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="user-profile-badge">
+        <div class="avatar-initials">
+          {{ current_user.name[0] if current_user else 'C' }}
+        </div>
+        <div class="user-meta">
+          <div class="user-name">{{ current_user.name if current_user else 'Citizen' }}</div>
+          <div class="user-role">Citizen Account</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="dashboard-header">
+      <div class="header-left">
+        <button class="menu-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-title">
+          My Reports &amp; Tracking
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="btn btn-secondary btn-sm" id="refreshReportsBtn" title="Refresh reports list">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh
+        </button>
+        <a href="{{ url_for('report_garbage_page') }}" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-plus"></i> New Report
+        </a>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <!-- Search & Filters Container -->
+      <div class="content-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <!-- Search Input -->
+          <div class="input-with-icon" style="flex: 1; min-width: 250px;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="reportSearchInput" class="form-control" placeholder="Search by Complaint ID (e.g. CT-2026-1042) or location...">
+          </div>
+        </div>
+
+        <!-- Status Filter Pills -->
+        <div class="filter-pills-row" style="margin-top: 1rem; margin-bottom: 0;">
+          <div class="filter-pill active" data-status="all">All Reports</div>
+          <div class="filter-pill" data-status="Pending">Pending</div>
+          <div class="filter-pill" data-status="Reviewed">Reviewed</div>
+          <div class="filter-pill" data-status="Assigned">Assigned</div>
+          <div class="filter-pill" data-status="In Progress">In Progress</div>
+          <div class="filter-pill" data-status="Resolved">Resolved</div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="reportsLoading" style="display: none; text-align: center; padding: 3rem 0;">
+        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+        <p style="margin-top: 0.5rem; color: var(--text-muted);">Loading your complaint records...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="noReportsFound" style="display: none; text-align: center; padding: 4rem 1rem; background-color: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
+        <div style="width: 70px; height: 70px; border-radius: 50%; background-color: var(--primary-subtle); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.75rem;">
+          <i class="fa-solid fa-inbox"></i>
+        </div>
+        <h3>No Reports Matching Criteria</h3>
+        <p style="color: var(--text-muted); max-width: 360px; margin: 0.5rem auto 1.5rem; font-size: 0.9rem;">
+          You don't have any waste reports matching this status filter or search term.
+        </p>
+        <a href="{{ url_for('report_garbage_page') }}" class="btn btn-primary">
+          <i class="fa-solid fa-camera"></i> Report New Garbage
+        </a>
+      </div>
+
+      <!-- Reports List Container -->
+      <div id="reportsListContainer">
+        <!-- Rendered by my_reports.js -->
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================= COMPLAINT TRACKING MODAL ================= -->
+<div class="modal-backdrop" id="reportTrackingModal">
+  <div class="modal-dialog lg">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <h3 style="font-size: 1.25rem; margin: 0; color: #0f172a;">
+          Complaint Tracking: <span id="modalComplaintId" style="color: #0284c7;">CT-2026-XXXX</span>
+        </h3>
+        <span class="badge" id="modalCategoryBadge" style="background-color: #f1f5f9; color: #334155;">Mixed Waste</span>
+        <div id="modalStatusBadge"></div>
+      </div>
+      <button style="background:none; border:none; font-size:1.4rem; cursor:pointer; color: #94a3b8;" onclick="closeModal('reportTrackingModal')">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- 5-STAGE PROGRESS TIMELINE -->
+      <div style="margin-bottom: 2rem;">
+        <h4 style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 1rem;">
+          Resolution Progress Pipeline
+        </h4>
+        <div class="timeline-container" id="modalTimelineContainer">
+          <!-- Dynamically populated 5-stage stepper -->
+        </div>
+      </div>
+
+      <!-- Split Photo Proof Comparison -->
+      <div style="margin-bottom: 1.5rem;">
+        <h4 style="font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Visual Evidence Comparison
+        </h4>
+        <div class="split-photos-container">
+          <!-- Before Photo (Citizen upload) -->
+          <div class="photo-box">
+            <img id="modalOriginalImage" src="" alt="Reported Waste Image">
+            <div class="photo-caption">
+              <i class="fa-solid fa-camera"></i> Citizen Reported Photo
+            </div>
+          </div>
+
+          <!-- After Photo (Cleanup Team proof) -->
+          <div class="photo-box">
+            <img id="modalAfterImage" src="" alt="Cleaned Verification Proof" style="display: none;">
+            <div id="modalAfterPlaceholder" style="width: 100%; height: 180px; border-radius: var(--radius-md); border: 2px dashed var(--border-light); background-color: var(--bg-card-secondary); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.85rem; padding: 1rem; text-align: center;">
+              <i class="fa-solid fa-hourglass-half" style="font-size: 1.75rem; color: #f59e0b; margin-bottom: 0.5rem;"></i>
+              <span>Cleanup in progress. Team photo verification will appear once resolved.</span>
+            </div>
+            <div class="photo-caption">
+              <i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Sanitation Team Resolution Proof
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background-color: var(--bg-card-secondary); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.88rem;">
+        <div>
+          <span style="color: var(--text-muted); display: block;">Reported Date &amp; Time:</span>
+          <strong id="modalReportDate" style="color: var(--text-main);">Oct 3, 2026</strong>
+        </div>
+        <div>
+          <span style="color: var(--text-muted); display: block;">Location / Address:</span>
+          <strong id="modalAddress" style="color: var(--text-main);">Indiranagar, Ward 4</strong>
+        </div>
+        <div style="grid-column: span 2;">
+          <span style="color: var(--text-muted); display: block;">Description:</span>
+          <span id="modalDescription" style="color: var(--text-body);">Piles of plastic packaging and mineral water bottles.</span>
+        </div>
+      </div>
+
+      <!-- Official Administrative Notes -->
+      <div style="background-color: #ecfdf5; border-left: 4px solid var(--primary); padding: 1rem 1.25rem; border-radius: 4px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #047857; text-transform: uppercase; margin-bottom: 0.25rem;">
+          <i class="fa-solid fa-building-columns"></i> Municipal Sanitation Squad Logs:
+        </div>
+        <p id="modalAdminNotes" style="font-size: 0.88rem; color: #064e3b; margin: 0;">
+          No administrative instructions recorded yet.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('reportTrackingModal')">Close Tracking</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/my_reports.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block title %}CleanTrack AI – AI-Powered Smart Waste Management System{% endblock %}
+
+{% block layout %}
+  <!-- Top Navigation Bar -->
+  <header class="site-navbar">
+    <div class="container nav-container">
+      <a href="{{ url_for('home_page') }}" class="brand-logo">
+        <div class="brand-icon">
+          <i class="fa-solid fa-leaf"></i>
+        </div>
+        <div class="brand-name">CleanTrack <span>AI</span></div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#home" class="nav-link active">Home</a></li>
+        <li><a href="#about" class="nav-link">About</a></li>
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+        <li><a href="#stats" class="nav-link">Impact Stats</a></li>
+        
+        {% if current_user %}
+          {% if current_user.role == 'admin' %}
+            <li><a href="{{ url_for('admin_dashboard_page') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-gauge-high"></i> Admin Portal</a></li>
+          {% else %}
+            <li><a href="{{ url_for('citizen_dashboard_page') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-gauge"></i> My Dashboard</a></li>
+          {% endif %}
+          <li><a href="{{ url_for('logout_route') }}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+        {% else %}
+          <li><a href="{{ url_for('login_page') }}" class="nav-link">Login</a></li>
+          <li><a href="{{ url_for('register_page') }}" class="btn btn-primary btn-sm">Register</a></li>
+        {% endif %}
+      </ul>
+
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" id="home">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-text-content">
+          <div class="hero-tag">
+            <i class="fa-solid fa-sparkles"></i> Next-Gen Civic Environmental Intelligence
+          </div>
+          <h1 class="hero-title">
+            Making Our Cities Cleaner with <span>AI</span>
+          </h1>
+          <p class="hero-subtitle">
+            CleanTrack AI bridges citizens and municipal authorities in real time. Snap a photo of dumped garbage, let our vision AI categorize waste and map geospatial hotspots, and watch municipal squads resolve it with verified before-and-after proof.
+          </p>
+
+          <div class="hero-cta">
+            {% if current_user %}
+              <a href="{{ url_for('report_garbage_page') if current_user.role == 'citizen' else url_for('manage_reports_page') }}" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-camera"></i> Report Garbage
+              </a>
+              <a href="{{ url_for('citizen_dashboard_page') if current_user.role == 'citizen' else url_for('admin_dashboard_page') }}" class="btn btn-secondary btn-lg">
+                <i class="fa-solid fa-compass"></i> Explore Dashboard
+              </a>
+            {% else %}
+              <a href="{{ url_for('login_page') }}" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-camera"></i> Report Garbage
+              </a>
+              <a href="{{ url_for('login_page') }}" class="btn btn-secondary btn-lg">
+                <i class="fa-solid fa-compass"></i> Explore Dashboard
+              </a>
+            {% endif %}
+          </div>
+
+          <div style="display: flex; gap: 1.5rem; align-items: center; color: var(--text-muted); font-size: 0.9rem;">
+            <div><i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Citizen Privacy Protected</div>
+            <div><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Real-Time Geospatial Triage</div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <!-- Smart City & Waste Collection SVG Illustration -->
+          <svg class="hero-illustration" viewBox="0 0 540 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ecfdf5"/>
+                <stop offset="100%" stop-color="#ffffff"/>
+              </linearGradient>
+              <linearGradient id="cityGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#cbd5e1"/>
+                <stop offset="100%" stop-color="#94a3b8"/>
+              </linearGradient>
+              <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10b981"/>
+                <stop offset="100%" stop-color="#047857"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Sky Background -->
+            <rect width="540" height="400" rx="20" fill="url(#skyGrad)"/>
+
+            <!-- City Skyline Silhouette -->
+            <rect x="50" y="160" width="45" height="150" fill="#e2e8f0" rx="4"/>
+            <rect x="110" y="120" width="60" height="190" fill="#cbd5e1" rx="4"/>
+            <rect x="185" y="180" width="55" height="130" fill="#e2e8f0" rx="4"/>
+            <rect x="330" y="140" width="50" height="170" fill="#cbd5e1" rx="4"/>
+            <rect x="395" y="110" width="65" height="200" fill="#e2e8f0" rx="4"/>
+            <rect x="475" y="190" width="40" height="120" fill="#cbd5e1" rx="4"/>
+
+            <!-- Ground & Road -->
+            <path d="M0 310 Q270 295 540 310 L540 400 L0 400 Z" fill="#f1f5f9"/>
+            <path d="M0 330 Q270 315 540 330 L540 380 L0 380 Z" fill="#334155"/>
+            <!-- Road dash line -->
+            <line x1="20" y1="355" x2="70" y2="355" stroke="#ffffff" stroke-dasharray="15,15" stroke-width="4"/>
+            <line x1="120" y1="355" x2="220" y2="355" stroke="#ffffff" stroke-dasharray="15,15" stroke-width="4"/>
+            <line x1="280" y1="355" x2="380" y2="355" stroke="#ffffff" stroke-dasharray="15,15" stroke-width="4"/>
+            <line x1="440" y1="355" x2="520" y2="355" stroke="#ffffff" stroke-dasharray="15,15" stroke-width="4"/>
+
+            <!-- Trees & Park Elements -->
+            <circle cx="85" cy="290" r="22" fill="#86efac"/>
+            <circle cx="85" cy="285" r="16" fill="#22c55e"/>
+            <circle cx="450" cy="295" r="25" fill="#86efac"/>
+            <circle cx="450" cy="288" r="18" fill="#16a34a"/>
+
+            <!-- Smart Electric Sanitation Truck -->
+            <g transform="translate(190, 260)">
+              <!-- Truck Cabin -->
+              <rect x="110" y="25" width="45" height="45" rx="8" fill="#10b981"/>
+              <rect x="125" y="32" width="25" height="22" rx="4" fill="#d1fae5"/>
+              <!-- Truck Body Container -->
+              <rect x="10" y="10" width="95" height="60" rx="8" fill="#047857"/>
+              <!-- Recycling emblem on truck -->
+              <circle cx="58" cy="40" r="18" fill="#ffffff" opacity="0.9"/>
+              <path d="M58 28 L64 36 L52 36 Z M68 45 L62 52 L56 46 Z M48 45 L54 52 L48 56 Z" fill="#10b981"/>
+              <!-- Wheels -->
+              <circle cx="35" cy="72" r="14" fill="#0f172a"/>
+              <circle cx="35" cy="72" r="6" fill="#cbd5e1"/>
+              <circle cx="125" cy="72" r="14" fill="#0f172a"/>
+              <circle cx="125" cy="72" r="6" fill="#cbd5e1"/>
+            </g>
+
+            <!-- AI Vision Camera Node Beacon -->
+            <g transform="translate(230, 70)">
+              <circle cx="40" cy="40" r="32" fill="#10b981" opacity="0.15"/>
+              <circle cx="40" cy="40" r="22" fill="url(#greenGrad)"/>
+              <path d="M32 35 L48 35 L48 48 L32 48 Z" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+              <circle cx="40" cy="41.5" r="3" fill="#ffffff"/>
+              <!-- Scanning Waves -->
+              <path d="M22 25 A 25 25 0 0 1 58 25" stroke="#10b981" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M16 18 A 34 34 0 0 1 64 18" stroke="#059669" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </g>
+          </svg>
+
+          <!-- Floating Info Badges -->
+          <div class="floating-badge badge-top">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div>
+            <div>
+              <div style="color: #0f172a; font-weight: 700;">Vision AI Active</div>
+              <div style="font-size: 0.72rem; color: #64748b;">94.2% Classification Accuracy</div>
+            </div>
+          </div>
+
+          <div class="floating-badge badge-bottom">
+            <i class="fa-solid fa-map-location-dot" style="color: #0284c7; font-size: 1.25rem;"></i>
+            <div>
+              <div style="color: #0f172a; font-weight: 700;">DBSCAN Clustering</div>
+              <div style="font-size: 0.72rem; color: #64748b;">Spatial Hotspot Mapping</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Core Capabilities</div>
+        <h2 class="section-title">Built for Modern Smart Municipalities</h2>
+        <p class="section-subtitle">
+          CleanTrack AI seamlessly blends edge artificial intelligence, spatial clustering algorithms, and an intuitive dispatch dashboard to keep urban neighborhoods pristine.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1: AI Waste Detection -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <h3>AI Waste Detection</h3>
+          <p>
+            Citizens upload a photo and our vision inference models automatically classify waste into Plastics, Organic, Paper, or Hazardous debris with transparent confidence metrics.
+          </p>
+        </div>
+
+        <!-- Feature 2: Smart Hotspot Mapping -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper" style="background-color: #e0f2fe; color: #0284c7;">
+            <i class="fa-solid fa-map-pin"></i>
+          </div>
+          <h3>Smart Hotspot Mapping</h3>
+          <p>
+            Using Scikit-Learn DBSCAN spatial clustering, CleanTrack AI aggregates nearby complaints into dense hotspot zones, pinpointing chronic municipal overflow areas.
+          </p>
+        </div>
+
+        <!-- Feature 3: Real-Time Tracking -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper" style="background-color: #fef3c7; color: #b45309;">
+            <i class="fa-solid fa-timeline"></i>
+          </div>
+          <h3>Real-Time Tracking</h3>
+          <p>
+            Citizens receive transparent updates across a 5-stage progress timeline, showing review status, team dispatch, and final verification proof.
+          </p>
+        </div>
+
+        <!-- Feature 4: Cleanup Management -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper" style="background-color: #ede9fe; color: #6d28d9;">
+            <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <h3>Cleanup Management</h3>
+          <p>
+            Administrators triage complaints using explainable algorithmic priority scoring, assign designated sanitation teams, and verify after-cleanup photo evidence.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="how-it-works-section" id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">End-to-End Workflow</div>
+        <h2 class="section-title">How CleanTrack AI Works</h2>
+        <p class="section-subtitle">
+          From citizen observation to verified municipal resolution in 5 transparent steps.
+        </p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h4>Report Waste</h4>
+          <p>Citizen takes a photo of street trash and confirms GPS coordinates on an interactive map.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h4>AI Analysis</h4>
+          <p>Vision model categorizes the material and computes initial hazard urgency score.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h4>Location Mapping</h4>
+          <p>Report is mapped and clustered into ward-level density hotspots via DBSCAN.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <h4>Cleanup Assignment</h4>
+          <p>Admin dispatches nearest active sanitation squad with prioritized route.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">5</div>
+          <h4>Resolution</h4>
+          <p>Sanitation crew uploads after-cleanup proof photo and citizen is notified.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Statistics Section (Demo Data Clearly Marked) -->
+  <section class="stats-section" id="stats">
+    <div class="container" style="text-align: center;">
+      <div class="stats-disclaimer">
+        <i class="fa-solid fa-flask"></i> Demonstrated Municipal Pilot Metrics (Sample Data)
+      </div>
+      <h2 style="color: #ffffff; margin-bottom: 3rem; font-size: 2.2rem;">
+        Transforming Urban Cleanliness Across Wards
+      </h2>
+
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-number">14,250+</div>
+          <div class="stat-label">Complaints Resolved</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">94.2%</div>
+          <div class="stat-label">AI Classification Accuracy</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">42</div>
+          <div class="stat-label">Active Municipal Wards</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">3.2 hrs</div>
+          <div class="stat-label">Average Response Time</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section class="about-section" id="about">
+    <div class="container">
+      <div class="about-grid">
+        <div>
+          <div class="section-tag">Our Mission</div>
+          <h2 class="section-title">Empowering Citizens and Municipalities for Zero-Waste Cities</h2>
+          <p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.7;">
+            CleanTrack AI was engineered to eliminate informal dump yards and accelerate municipal responsiveness. By democratizing waste reporting with automated vision AI and data-driven prioritization, we ensure municipal resources are dispatched where they are needed most urgently.
+          </p>
+
+          <ul class="about-bullets">
+            <li class="about-bullet-item">
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <strong>Transparent Accountability:</strong>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.92rem;">Citizens can inspect full status audit trails and after-cleanup photo evidence.</p>
+              </div>
+            </li>
+            <li class="about-bullet-item">
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <strong>Explainable AI Prioritization:</strong>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.92rem;">Clear breakdown of priority scores based on hazard type, public proximity, and complaint age.</p>
+              </div>
+            </li>
+            <li class="about-bullet-item">
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <strong>Spatial Clustering:</strong>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.92rem;">Prevent chronic accumulation through automated DBSCAN density monitoring.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div style="background-color: var(--bg-card-secondary); border-radius: var(--radius-xl); padding: 2.5rem; border: 1px solid var(--border-light);">
+          <h3 style="margin-bottom: 1rem; color: var(--text-main);">Join the Clean City Movement</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+            Whether you are a concerned citizen wanting a cleaner street or a municipal sanitation officer optimizing route allocation, CleanTrack AI provides the platform.
+          </p>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{{ url_for('register_page') }}" class="btn btn-primary">
+              <i class="fa-solid fa-user-plus"></i> Join as Citizen
+            </a>
+            <a href="{{ url_for('login_page') }}" class="btn btn-secondary">
+              <i class="fa-solid fa-lock"></i> Officer Login
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="brand-logo" style="margin-bottom: 0.5rem;">
+            <div class="brand-icon">
+              <i class="fa-solid fa-leaf"></i>
+            </div>
+            <div class="brand-name">CleanTrack <span>AI</span></div>
+          </div>
+          <p>
+            AI-Powered Smart Waste Management System. Building clean, sustainable, and responsive urban environments.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About Project</a></li>
+            <li><a href="#features">AI Features</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#stats">Impact Metrics</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Portals</h4>
+          <ul>
+            <li><a href="{{ url_for('login_page') }}">Citizen Login</a></li>
+            <li><a href="{{ url_for('register_page') }}">Citizen Registration</a></li>
+            <li><a href="{{ url_for('login_page') }}">Administrator Portal</a></li>
+            <li><a href="{{ url_for('login_page') }}">Demo Access</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col footer-contact">
+          <h4>Contact &amp; Support</h4>
+          <ul>
+            <li>
+              <i class="fa-solid fa-location-dot"></i>
+              <span>Smart City Governance Cell, Municipal Corporation</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-envelope"></i>
+              <span>support@cleantrack.ai</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-phone"></i>
+              <span>Toll-Free Civic Helpline: 1800-CLEAN-CITY</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; {{ year }} CleanTrack AI. All rights reserved. Built with modern civic technology.</div>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="#" style="color: var(--text-muted);">Privacy Policy</a>
+          <a href="#" style="color: var(--text-muted);">Terms of Service</a>
+          <a href="#" style="color: var(--text-muted);">Open Data Standards</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+{% endblock %}
